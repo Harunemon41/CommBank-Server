@@ -3,15 +3,6 @@ using MongoDB.Driver;
 
 namespace CommBank.Services
 {
-    public interface IGoalsService
-    {
-        Task<List<Goal>> GetAsync();
-        Task<Goal?> GetAsync(string id);
-        Task CreateAsync(Goal newGoal);
-        Task UpdateAsync(string id, Goal updatedGoal);
-        Task RemoveAsync(string id);
-    }
-
     public class GoalsService : IGoalsService
     {
         private readonly IMongoCollection<Goal> _goalsCollection;
@@ -26,6 +17,9 @@ namespace CommBank.Services
 
         public async Task<Goal?> GetAsync(string id) =>
             await _goalsCollection.Find(x => x.Id == id).FirstOrDefaultAsync();
+
+        public async Task<List<Goal>?> GetForUserAsync(string id) =>
+            await _goalsCollection.Find(x => x.UserId == id).ToListAsync();
 
         public async Task CreateAsync(Goal newGoal) =>
             await _goalsCollection.InsertOneAsync(newGoal);
