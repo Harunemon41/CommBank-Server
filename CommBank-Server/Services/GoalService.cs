@@ -1,23 +1,24 @@
-﻿using CommBank.Models;
-using Microsoft.Extensions.Options;
+using CommBank.Models;
 using MongoDB.Driver;
 
 namespace CommBank.Services
 {
-    public class GoalsService
+    public interface IGoalsService
+    {
+        Task<List<Goal>> GetAsync();
+        Task<Goal?> GetAsync(string id);
+        Task CreateAsync(Goal newGoal);
+        Task UpdateAsync(string id, Goal updatedGoal);
+        Task RemoveAsync(string id);
+    }
+
+    public class GoalsService : IGoalsService
     {
         private readonly IMongoCollection<Goal> _goalsCollection;
 
-        public GoalsService(IOptions<CommBankDatabaseSettings> commBankDatabaseSettings)
+        public GoalsService(IMongoDatabase database)
         {
-            var mongoClient = new MongoClient(
-                commBankDatabaseSettings.Value.ConnectionString);
-
-            var mongoDatabase = mongoClient.GetDatabase(
-                commBankDatabaseSettings.Value.DatabaseName);
-
-            _goalsCollection = mongoDatabase.GetCollection<Goal>(
-                commBankDatabaseSettings.Value.GoalsCollectionName);
+            _goalsCollection = database.GetCollection<Goal>("Goals");
         }
 
         public async Task<List<Goal>> GetAsync() =>
