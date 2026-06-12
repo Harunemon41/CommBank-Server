@@ -1,102 +1,54 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using CommBank.Models;
 using CommBank.Services;
-using CommBank.Models;
+using Microsoft.AspNetCore.Mvc;
 
-namespace CommBank.Controllers;
-
-[ApiController]
-[Route("api/[controller]")]
-public class GoalController : ControllerBase
+namespace CommBank.Controllers
 {
-    private readonly IGoalsService _goalsService;
-    private readonly IUsersService _usersService;
-
-    public GoalController(IGoalsService goalsService, IUsersService usersService)
+    [ApiController]
+    [Route("api/[controller]")]
+    public class GoalsController : ControllerBase
     {
-        _goalsService = goalsService;
-        _usersService = usersService;
-    }
+        private readonly GoalsService _goalsService;
 
-    [HttpGet]
-    public async Task<List<Goal>> Get() =>
-        await _goalsService.GetAsync();
+        public GoalsController(GoalsService goalsService) =>
+            _goalsService = goalsService;
 
-    [HttpGet("{id:length(24)}")]
-    public async Task<ActionResult<Goal>> Get(string id)
-    {
-        var goal = await _goalsService.GetAsync(id);
+        [HttpGet]
+        public async Task<List<Goal>> Get() =>
+            await _goalsService.GetAsync();
 
-        if (goal is null)
+        [HttpGet("{id:length(24)}")]
+        public async Task<ActionResult<Goal>> Get(string id)
         {
-            return NotFound();
+            var goal = await _goalsService.GetAsync(id);
+            if (goal is null) return NotFound();
+            return goal;
         }
 
-        return goal;
-    }
-
-    [HttpGet("User/{id:length(24)}")]
-    public async Task<List<Goal>?> GetForUser(string id) =>
-        await _goalsService.GetForUserAsync(id);
-
-    [HttpPost]
-    public async Task<IActionResult> Post(Goal newGoal)
-    {
-        await _goalsService.CreateAsync(newGoal);
-
-        if (newGoal.Id is not null && newGoal.UserId is not null)
+        [HttpPost]
+        public async Task<IActionResult> Post(Goal newGoal)
         {
-            var user = await _usersService.GetAsync(newGoal.UserId);
-
-            if (user is not null && user.Id is not null)
-            {
-                if (user.GoalIds is not null)
-                {
-                    user.GoalIds.Add(newGoal.Id);
-                }
-                else
-                {
-                    user.GoalIds = new()
-                    {
-                        newGoal.Id
-                    };
-                }
-
-                await _usersService.UpdateAsync(user.Id, user);
-            }
+            await _goalsService.CreateAsync(newGoal);
+            return CreatedAtAction(nameof(Get), new { id = newGoal.Id }, newGoal);
         }
 
-        return CreatedAtAction(nameof(Get), new { id = newGoal.Id }, newGoal);
-    }
-
-    [HttpPut("{id:length(24)}")]
-    public async Task<IActionResult> Update(string id, Goal updatedGoal)
-    {
-        var goal = await _goalsService.GetAsync(id);
-
-        if (goal is null)
+        [HttpPut("{id:length(24)}")]
+        public async Task<IActionResult> Update(string id, Goal updatedGoal)
         {
-            return NotFound();
+            var goal = await _goalsService.GetAsync(id);
+            if (goal is null) return NotFound();
+            updatedGoal.Id = goal.Id;
+            await _goalsService.UpdateAsync(id, updatedGoal);
+            return NoContent();
         }
 
-        updatedGoal.Id = goal.Id;
-
-        await _goalsService.UpdateAsync(id, updatedGoal);
-
-        return NoContent();
-    }
-
-    [HttpDelete("{id:length(24)}")]
-    public async Task<IActionResult> Delete(string id)
-    {
-        var goal = await _goalsService.GetAsync(id);
-
-        if (goal is null)
+        [HttpDelete("{id:length(24)}")]
+        public async Task<IActionResult> Delete(string id)
         {
-            return NotFound();
+            var goal = await _goalsService.GetAsync(id);
+            if (goal is null) return NotFound();
+            await _goalsService.RemoveAsync(id);
+            return NoContent();
         }
-
-        await _goalsService.RemoveAsync(id);
-
-        return NoContent();
     }
 }
